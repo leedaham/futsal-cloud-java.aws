@@ -13,6 +13,7 @@ import com.hamtom.futsalcloud.reserve.dto.LoginCookie;
 import com.hamtom.futsalcloud.reserve.dto.RequestDTO;
 import com.hamtom.futsalcloud.reserve.dto.ReservationValues;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 public class LambdaHandler implements RequestHandler<Map<String, Object>, String> {
@@ -24,14 +25,15 @@ public class LambdaHandler implements RequestHandler<Map<String, Object>, String
     public String handleRequest(Map<String, Object> event, Context context) {
         setLogger(context);
 
-        logger.log("********* Lambda START ");
+        logger.log("********* Lambda START "+ LocalDateTime.now());
         try {
-            Thread.sleep(49_000); // 49초 대기
+            Thread.sleep(45_000); // 49초 대기
+            logger.log("awake "+ LocalDateTime.now());
         } catch (InterruptedException e) {
             logger.log(e.getMessage());
         }
 
-        logger.log("********* Process START ");
+        logger.log("********* Process START "+ LocalDateTime.now());
         RequestDTO requestDTO = mapToRequestDTO(event);
         ReservationValues reservationValues = new ReservationValues(requestDTO.getReserveDateTimeInfo(), requestDTO.getStadiumOrder());
 
