@@ -40,3 +40,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Secret data
+/src/java/com/hamtom/futsalcloud/reserve/enums
