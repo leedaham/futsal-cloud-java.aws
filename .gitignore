@@ -42,4 +42,4 @@ bin/
 .DS_Store
 
 ### Secret data
-/src/java/com/hamtom/futsalcloud/reserve/enums
+/src/java/com/hamtom/futsalcloud/reserve/enums/ReserveUrl.java
