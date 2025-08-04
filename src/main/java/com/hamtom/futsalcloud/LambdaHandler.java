@@ -14,6 +14,8 @@ import com.hamtom.futsalcloud.reserve.dto.RequestDTO;
 import com.hamtom.futsalcloud.reserve.dto.ReservationValues;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 public class LambdaHandler implements RequestHandler<Map<String, Object>, String> {
@@ -26,16 +28,18 @@ public class LambdaHandler implements RequestHandler<Map<String, Object>, String
         setLogger(context);
 
         logger.log("********* Lambda START "+ LocalDateTime.now());
-        try {
-            Thread.sleep(45_000); // 49초 대기
-            logger.log("awake "+ LocalDateTime.now());
-        } catch (InterruptedException e) {
-            logger.log(e.getMessage());
-        }
-
-        logger.log("********* Process START "+ LocalDateTime.now());
+//        try {
+//            Thread.sleep(45_000); // 49초 대기
+//            logger.log("awake "+ LocalDateTime.now());
+//        } catch (InterruptedException e) {
+//            logger.log(e.getMessage());
+//        }
+//
+//        logger.log("********* Process START "+ LocalDateTime.now());
         RequestDTO requestDTO = mapToRequestDTO(event);
         ReservationValues reservationValues = new ReservationValues(requestDTO.getReserveDateTimeInfo(), requestDTO.getStadiumOrder());
+
+
 
         try {
             //Login
@@ -45,6 +49,9 @@ public class LambdaHandler implements RequestHandler<Map<String, Object>, String
             if(loginCookie.isFailure()) return "Fail..";
 
             String cookie = loginCookie.makeCookieForHeader();
+
+            //자정 기다리기
+            waitForTime(context);
 
             StepOne stepOne = new StepOne(reservationValues);
             EachStepResult eachStepResult = stepOne.executeStep(cookie);
@@ -78,6 +85,40 @@ public class LambdaHandler implements RequestHandler<Map<String, Object>, String
         return new RequestDTO(event);
     }
 
+    public void waitForTime(Context context){
+        ZoneId zone = ZoneId.of("Asia/Seoul");  // 원하는 시간대
+        LocalDateTime now = LocalDateTime.now(zone);
+        int ONE_SECOND = 1000;
+        int adjustmentMs = 20;
+
+        // 다음 날 자정 00:00:00
+        LocalDateTime nextMidnight = now.plusDays(1).toLocalDate().atStartOfDay();
+//        LocalDateTime nextMidnight = now.withHour(16).withMinute(22).withSecond(0).withNano(0);
+
+        long waitMillis = ChronoUnit.MILLIS.between(now, nextMidnight);
+
+        context.getLogger().log("현재 시각: " + now + "\n");
+        context.getLogger().log("작업 예정 시간: " + nextMidnight + "\n");
+        context.getLogger().log("대기 시간 (ms): " + waitMillis + "-"+adjustmentMs+"(adjustmentMs) \n");
+        waitMillis -= adjustmentMs;
+        long sec = waitMillis / ONE_SECOND;
+        long remainMs = waitMillis % ONE_SECOND;
+
+        try {
+            for(int i = 0; i < sec; i++){
+                Thread.sleep(ONE_SECOND);
+                context.getLogger().log((i+1) + "초 경과\n");
+            }
+            Thread.sleep(remainMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            context.getLogger().log("인터럽트로 인해 중단됨");
+            return;
+        }
+
+        LocalDateTime executedTime = LocalDateTime.now(zone);
+        context.getLogger().log("작업 실행 시각: " + executedTime + "\n");
+    }
 
     public void loggingPayload(Map<String, Object> event) {
         try {
